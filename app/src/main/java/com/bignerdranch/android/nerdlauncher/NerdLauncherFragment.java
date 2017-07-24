@@ -1,8 +1,10 @@
 package com.bignerdranch.android.nerdlauncher;
 
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -12,6 +14,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import java.util.Collections;
@@ -65,13 +68,16 @@ public class NerdLauncherFragment extends Fragment {
         mRecyclerView.setAdapter(new ActivityAdapter(activities));
     }
 
-    private class ActivityHolder extends RecyclerView.ViewHolder{
+    private class ActivityHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
         private ResolveInfo mResolveInfo;
+        private ImageView mImageView;
         private TextView mNameTextView;
 
         public ActivityHolder(View itemView) {
             super(itemView);
-            mNameTextView = (TextView) itemView;
+            itemView.setOnClickListener(this);
+            mNameTextView = (TextView) itemView.findViewById(R.id.list_item_app_tv);
+            mImageView = (ImageView) itemView.findViewById(R.id.list_item_app_iv);
         }
 
         public void bindActivity(ResolveInfo resolveInfo) {
@@ -79,6 +85,20 @@ public class NerdLauncherFragment extends Fragment {
             PackageManager pm = getActivity().getPackageManager();
             String appName = mResolveInfo.loadLabel(pm).toString();//получаем название приложения
             mNameTextView.setText(appName);
+            Drawable appImage = mResolveInfo.loadIcon(pm);
+            mImageView.setImageDrawable(appImage);
+        }
+
+        @Override
+        public void onClick(View v) {//происходит запуск активности выбранного приложения
+            ActivityInfo activityInfo = mResolveInfo.activityInfo;
+            //получаем имя пакета и имя класса из метаданных и используем их для создания явной активности методом Intent:
+            //public Intent setClassName(String packageName, String className)
+            Intent i = new Intent(Intent.ACTION_MAIN)
+                    .setClassName(activityInfo.applicationInfo.packageName,
+                            activityInfo.name)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);//Чтобы при запуске новой активности запускалась новая задача
+            startActivity(i);
         }
     }
 
@@ -92,7 +112,7 @@ public class NerdLauncherFragment extends Fragment {
         @Override
         public ActivityHolder onCreateViewHolder(ViewGroup parent, int viewType) {
             LayoutInflater layoutInflater = LayoutInflater.from(getActivity());
-            View view = layoutInflater.inflate(android.R.layout.simple_list_item_1, parent, false);
+            View view = layoutInflater.inflate(R.layout.list_item_app, parent, false);
             return new ActivityHolder(view);
         }
 
